@@ -88,7 +88,7 @@ class GobangScene {
     this.gameOver = false;
     this.message = '你执黑先行';
 
-    this.backButton = new Button(width - 100, 20, 80, 36, '返回', () => manager.switch('home'));
+    this.backButton = createBackButton(() => manager.switch('home'));
 
     const boardPadding = 20;
     this.boardPx = Math.min(width - boardPadding * 2, height - 180);
@@ -327,7 +327,7 @@ class TetrisScene {
     this.over = false;
     this.current = this.newPiece();
 
-    this.backButton = new Button(width - 100, 20, 80, 36, '返回', () => manager.switch('home'));
+    this.backButton = createBackButton(() => manager.switch('home'));
 
     const ctlY = this.boardY + this.boardH + 16;
     this.btnLeft = new Button(24, ctlY, 72, 48, '←', () => this.move(-1, 0));
@@ -542,9 +542,19 @@ function drawBackground(ctx) {
 }
 
 function drawCard(ctx, x, y, w, h) {
+  ctx.shadowColor = 'rgba(31, 41, 55, 0.08)';
+  ctx.shadowBlur = 16;
+  ctx.shadowOffsetY = 6;
   ctx.fillStyle = COLORS.panel;
   roundRect(ctx, x, y, w, h, 16);
   ctx.fill();
+  ctx.shadowColor = 'transparent';
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetY = 0;
+}
+
+function createBackButton(onTap) {
+  return new Button(16, 20, 88, 36, '← 返回', onTap, '#4b5563');
 }
 
 function line(ctx, x1, y1, x2, y2) {
