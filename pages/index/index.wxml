@@ -1,0 +1,5 @@
+<view class="container">
+  <view class="title">微信小游戏集合</view>
+  <view class="desc">当前仓库主能力为小游戏（game.js）。</view>
+  <view class="desc">若要运行五子棋/俄罗斯方块，请在微信开发者工具中以“小游戏”类型导入。</view>
+</view>
