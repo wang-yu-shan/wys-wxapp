@@ -308,23 +308,26 @@ class TetrisScene {
     this.cols = 10;
     this.rows = 20;
     this.grid = Array.from({ length: this.rows }, () => Array(this.cols).fill(0));
-    this.cell = Math.floor(Math.min((width - 80) / this.cols, (height - 220) / this.rows));
+
+    this.boardX = 24;
+    this.boardY = safeTop + 106;
+    this.boardW = width - this.boardX * 2;
+    this.cell = Math.floor(this.boardW / this.cols);
     this.boardW = this.cell * this.cols;
     this.boardH = this.cell * this.rows;
-    this.boardX = 24;
-    this.boardY = safeTop + 96;
 
     this.shapes = [
       { color: '#60a5fa', blocks: [[1, 1, 1, 1]] },
       { color: '#f97316', blocks: [[1, 1], [1, 1]] },
-      { color: '#34d399', blocks: [[0, 1, 1], [1, 1, 0]] },
+      { color: '#2dd4bf', blocks: [[0, 1, 1], [1, 1, 0]] },
       { color: '#a78bfa', blocks: [[1, 1, 0], [0, 1, 1]] },
-      { color: '#f43f5e', blocks: [[1, 1, 1], [0, 1, 0]] },
+      { color: '#fb7185', blocks: [[1, 1, 1], [0, 1, 0]] },
       { color: '#22d3ee', blocks: [[1, 1, 1], [1, 0, 0]] },
       { color: '#facc15', blocks: [[1, 1, 1], [0, 0, 1]] },
     ];
 
     this.score = 0;
+    this.lines = 0;
     this.dropTimer = 0;
     this.dropInterval = 550;
     this.over = false;
@@ -332,13 +335,27 @@ class TetrisScene {
 
     this.backButton = createBackButton(() => manager.switch('home'));
 
-    const ctlY = this.boardY + this.boardH + 16;
-    this.btnLeft = new Button(24, ctlY, 72, 48, '←', () => this.move(-1, 0));
-    this.btnRight = new Button(110, ctlY, 72, 48, '→', () => this.move(1, 0));
-    this.btnRotate = new Button(196, ctlY, 96, 48, '旋转', () => this.rotate());
-    this.btnDown = new Button(306, ctlY, 72, 48, '↓', () => {
+    const ctlY = this.boardY + this.boardH + 18;
+    const gap = 12;
+    const totalW = width - 24 * 2;
+    const w1 = Math.floor((totalW - gap * 3) * 0.18);
+    const w2 = w1;
+    const w3 = Math.floor((totalW - gap * 3) * 0.34);
+    const w4 = totalW - w1 - w2 - w3 - gap * 3;
+    let x = 24;
+    this.btnLeft = new Button(x, ctlY, w1, 56, '←', () => this.move(-1, 0));
+    x += w1 + gap;
+    this.btnRight = new Button(x, ctlY, w2, 56, '→', () => this.move(1, 0));
+    x += w2 + gap;
+    this.btnRotate = new Button(x, ctlY, w3, 56, '旋转', () => this.rotate());
+    x += w3 + gap;
+    this.btnDown = new Button(x, ctlY, w4, 56, '↓', () => {
       this.dropTimer = this.dropInterval;
     });
+  }
+
+  get level() {
+    return Math.min(99, Math.floor(this.score / 500) + 1);
   }
 
   newPiece() {
@@ -369,43 +386,14 @@ class TetrisScene {
 
   draw(ctx) {
     drawBackground(ctx);
-
-    ctx.fillStyle = COLORS.text;
-    ctx.font = 'bold 24px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('俄罗斯方块', width / 2, safeTop + 42);
-
-    this.backButton.draw(ctx);
-
-    ctx.fillStyle = '#111827';
-    roundRect(ctx, this.boardX - 6, this.boardY - 6, this.boardW + 12, this.boardH + 12, 10);
-    ctx.fill();
-
-    for (let r = 0; r < this.rows; r++) {
-      for (let c = 0; c < this.cols; c++) {
-        const val = this.grid[r][c];
-        if (val) {
-          this.drawCell(c, r, val);
-        } else {
-          ctx.fillStyle = '#1f293780';
-          ctx.fillRect(this.boardX + c * this.cell + 1, this.boardY + r * this.cell + 1, this.cell - 2, this.cell - 2);
-        }
-      }
-    }
+    this.drawHeader(ctx);
+    this.drawBoard(ctx);
 
     if (this.current) {
       this.drawBlocks(this.current.x, this.current.y, this.current.blocks, this.current.color);
     }
 
-    ctx.fillStyle = COLORS.text;
-    ctx.font = '20px sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText(`分数: ${this.score}`, 24, this.boardY + this.boardH + 88);
-
-    this.btnLeft.draw(ctx);
-    this.btnRight.draw(ctx);
-    this.btnRotate.draw(ctx);
-    this.btnDown.draw(ctx);
+    [this.btnLeft, this.btnRight, this.btnRotate, this.btnDown].forEach((btn) => this.drawBlueButton(ctx, btn));
 
     if (this.over) {
       ctx.fillStyle = '#00000088';
@@ -413,10 +401,155 @@ class TetrisScene {
       ctx.fillStyle = '#fff';
       ctx.font = 'bold 36px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('游戏结束', width / 2, height / 2 - 20);
+      ctx.fillText('游戏结束', width / 2, height / 2 - 24);
       ctx.font = '24px sans-serif';
-      ctx.fillText(`得分 ${this.score}`, width / 2, height / 2 + 20);
+      ctx.fillText(`得分 ${this.score}`, width / 2, height / 2 + 18);
+      ctx.font = '18px sans-serif';
+      ctx.fillText('点击任意位置重新开始', width / 2, height / 2 + 52);
     }
+  }
+
+  drawHeader(ctx) {
+    this.drawMetalButton(ctx, this.backButton);
+
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 58px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('俄罗斯方块', width / 2, safeTop + 52);
+
+    const pillW = 150;
+    const pillH = 52;
+    const pillX = width - pillW - 18;
+    const pillY = safeTop + 18;
+
+    const g = ctx.createLinearGradient(pillX, pillY, pillX, pillY + pillH);
+    g.addColorStop(0, '#4b5563');
+    g.addColorStop(1, '#1f2937');
+    ctx.fillStyle = g;
+    roundRect(ctx, pillX, pillY, pillW, pillH, pillH / 2);
+    ctx.fill();
+
+    ctx.strokeStyle = '#6b7280';
+    ctx.lineWidth = 2;
+    roundRect(ctx, pillX + 1, pillY + 1, pillW - 2, pillH - 2, pillH / 2 - 1);
+    ctx.stroke();
+
+    const scoreText = String(Math.min(999, this.score)).padStart(3, '0');
+    const levelText = String(this.level).padStart(2, '0');
+    ctx.font = 'bold 44px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#facc15';
+    ctx.fillText(scoreText, pillX + 18, pillY + pillH / 2 + 1);
+    ctx.fillStyle = '#e5e7eb';
+    ctx.fillText(levelText, pillX + 86, pillY + pillH / 2 + 1);
+  }
+
+  drawBoard(ctx) {
+    roundRect(ctx, this.boardX, this.boardY, this.boardW, this.boardH, 26);
+    ctx.save();
+    ctx.clip();
+
+    const bg = ctx.createLinearGradient(this.boardX, this.boardY, this.boardX + this.boardW, this.boardY + this.boardH);
+    bg.addColorStop(0, '#031024');
+    bg.addColorStop(0.55, '#081329');
+    bg.addColorStop(1, '#1d152f');
+    ctx.fillStyle = bg;
+    ctx.fillRect(this.boardX, this.boardY, this.boardW, this.boardH);
+
+    const glowA = ctx.createRadialGradient(this.boardX + this.boardW * 0.08, this.boardY + this.boardH * 0.82, 20, this.boardX + this.boardW * 0.08, this.boardY + this.boardH * 0.82, this.boardW * 0.55);
+    glowA.addColorStop(0, 'rgba(34, 211, 238, 0.45)');
+    glowA.addColorStop(1, 'rgba(34, 211, 238, 0)');
+    ctx.fillStyle = glowA;
+    ctx.fillRect(this.boardX, this.boardY, this.boardW, this.boardH);
+
+    const glowB = ctx.createRadialGradient(this.boardX + this.boardW * 0.92, this.boardY + this.boardH * 0.08, 20, this.boardX + this.boardW * 0.92, this.boardY + this.boardH * 0.08, this.boardW * 0.65);
+    glowB.addColorStop(0, 'rgba(251, 146, 60, 0.35)');
+    glowB.addColorStop(1, 'rgba(251, 146, 60, 0)');
+    ctx.fillStyle = glowB;
+    ctx.fillRect(this.boardX, this.boardY, this.boardW, this.boardH);
+
+    ctx.strokeStyle = 'rgba(87, 108, 153, 0.35)';
+    ctx.lineWidth = 1;
+    for (let c = 0; c <= this.cols; c++) {
+      const x = this.boardX + c * this.cell;
+      line(ctx, x, this.boardY, x, this.boardY + this.boardH);
+    }
+    for (let r = 0; r <= this.rows; r++) {
+      const y = this.boardY + r * this.cell;
+      line(ctx, this.boardX, y, this.boardX + this.boardW, y);
+    }
+
+    for (let r = 0; r < this.rows; r++) {
+      for (let c = 0; c < this.cols; c++) {
+        const val = this.grid[r][c];
+        if (val) this.drawCell(c, r, val);
+      }
+    }
+
+    ctx.restore();
+
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+    ctx.lineWidth = 2;
+    roundRect(ctx, this.boardX, this.boardY, this.boardW, this.boardH, 26);
+    ctx.stroke();
+  }
+
+  drawMetalButton(ctx, btn) {
+    const g = ctx.createLinearGradient(btn.x, btn.y, btn.x, btn.y + btn.h);
+    g.addColorStop(0, '#64748b');
+    g.addColorStop(1, '#334155');
+    ctx.fillStyle = g;
+    ctx.shadowColor = 'rgba(15, 23, 42, 0.35)';
+    ctx.shadowBlur = 12;
+    ctx.shadowOffsetY = 4;
+    roundRect(ctx, btn.x, btn.y, btn.w, btn.h, 16);
+    ctx.fill();
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 2;
+    roundRect(ctx, btn.x + 1, btn.y + 1, btn.w - 2, btn.h - 2, 15);
+    ctx.stroke();
+    ctx.fillStyle = '#e5e7eb';
+    ctx.font = 'bold 28px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('返回', btn.x + btn.w / 2, btn.y + btn.h / 2 + 1);
+  }
+
+  drawBlueButton(ctx, btn) {
+    const g = ctx.createLinearGradient(btn.x, btn.y, btn.x, btn.y + btn.h);
+    g.addColorStop(0, '#60a5fa');
+    g.addColorStop(1, '#2563eb');
+    ctx.fillStyle = g;
+    ctx.shadowColor = 'rgba(37, 99, 235, 0.42)';
+    ctx.shadowBlur = 14;
+    ctx.shadowOffsetY = 4;
+    roundRect(ctx, btn.x, btn.y, btn.w, btn.h, btn.h / 2);
+    ctx.fill();
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+
+    const shine = ctx.createLinearGradient(btn.x, btn.y, btn.x, btn.y + btn.h * 0.6);
+    shine.addColorStop(0, 'rgba(255,255,255,0.45)');
+    shine.addColorStop(1, 'rgba(255,255,255,0.04)');
+    ctx.fillStyle = shine;
+    roundRect(ctx, btn.x + 2, btn.y + 2, btn.w - 4, btn.h * 0.46, btn.h / 2);
+    ctx.fill();
+
+    ctx.strokeStyle = '#1d4ed8';
+    ctx.lineWidth = 2;
+    roundRect(ctx, btn.x + 1, btn.y + 1, btn.w - 2, btn.h - 2, btn.h / 2 - 1);
+    ctx.stroke();
+
+    ctx.fillStyle = '#e0f2fe';
+    ctx.font = `bold ${btn.text === '旋转' ? 24 : 34}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(btn.text, btn.x + btn.w / 2, btn.y + btn.h / 2 + 1);
   }
 
   handleTap(x, y) {
@@ -427,6 +560,7 @@ class TetrisScene {
     if (this.over) {
       this.grid = Array.from({ length: this.rows }, () => Array(this.cols).fill(0));
       this.score = 0;
+      this.lines = 0;
       this.over = false;
       this.current = this.newPiece();
       return;
@@ -438,8 +572,27 @@ class TetrisScene {
   }
 
   drawCell(c, r, color) {
-    ctx.fillStyle = color;
-    ctx.fillRect(this.boardX + c * this.cell + 1, this.boardY + r * this.cell + 1, this.cell - 2, this.cell - 2);
+    const x = this.boardX + c * this.cell + 2;
+    const y = this.boardY + r * this.cell + 2;
+    const w = this.cell - 4;
+
+    const glow = ctx.createRadialGradient(x + w / 2, y + w / 2, 2, x + w / 2, y + w / 2, w * 0.9);
+    glow.addColorStop(0, hexToRgba(color, 0.45));
+    glow.addColorStop(1, hexToRgba(color, 0));
+    ctx.fillStyle = glow;
+    ctx.fillRect(x - 2, y - 2, w + 4, w + 4);
+
+    const g = ctx.createLinearGradient(x, y, x, y + w);
+    g.addColorStop(0, lightenColor(color, 0.35));
+    g.addColorStop(1, color);
+    ctx.fillStyle = g;
+    roundRect(ctx, x, y, w, w, 4);
+    ctx.fill();
+
+    ctx.strokeStyle = lightenColor(color, 0.52);
+    ctx.lineWidth = 1.5;
+    roundRect(ctx, x + 0.5, y + 0.5, w - 1, w - 1, 3.5);
+    ctx.stroke();
   }
 
   drawBlocks(x, y, blocks, color) {
@@ -505,6 +658,7 @@ class TetrisScene {
       }
     }
     if (lines) {
+      this.lines += lines;
       this.score += [0, 100, 300, 700, 1500][lines];
       this.dropInterval = Math.max(130, 550 - Math.floor(this.score / 500) * 30);
     }
@@ -576,6 +730,26 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.arcTo(x, y + h, x, y, rr);
   ctx.arcTo(x, y, x + w, y, rr);
   ctx.closePath();
+}
+
+
+function lightenColor(hex, amount) {
+  const c = hex.replace('#', '');
+  const n = parseInt(c, 16);
+  const r = (n >> 16) & 255;
+  const g = (n >> 8) & 255;
+  const b = n & 255;
+  const mix = (v) => Math.max(0, Math.min(255, Math.round(v + (255 - v) * amount)));
+  return `rgb(${mix(r)}, ${mix(g)}, ${mix(b)})`;
+}
+
+function hexToRgba(hex, alpha) {
+  const c = hex.replace('#', '');
+  const n = parseInt(c, 16);
+  const r = (n >> 16) & 255;
+  const g = (n >> 8) & 255;
+  const b = n & 255;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
 function init() {
