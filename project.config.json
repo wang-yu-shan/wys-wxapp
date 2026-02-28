@@ -1,0 +1,24 @@
+{
+  "description": "微信小游戏集合：五子棋 + 俄罗斯方块",
+  "projectname": "wx-mini-game-collection",
+  "setting": {
+    "es6": true,
+    "minified": true,
+    "postcss": false,
+    "newFeature": true,
+    "coverView": true,
+    "nodeModules": false,
+    "enhance": true,
+    "showShadowRootInWxmlPanel": true,
+    "packNpmRelationList": [],
+    "babelSetting": {
+      "ignore": [],
+      "disablePlugins": [],
+      "outputPath": ""
+    }
+  },
+  "compileType": "game",
+  "libVersion": "3.3.0",
+  "appid": "touristappid",
+  "condition": {}
+}
