@@ -3,6 +3,9 @@ const ctx = canvas.getContext('2d');
 
 let width = 0;
 let height = 0;
+let safeTop = 0;
+
+const TOP_GAP = 24;
 
 const COLORS = {
   bg: '#f5f7fb',
@@ -91,10 +94,10 @@ class GobangScene {
     this.backButton = createBackButton(() => manager.switch('home'));
 
     const boardPadding = 20;
-    this.boardPx = Math.min(width - boardPadding * 2, height - 180);
+    this.boardPx = Math.min(width - boardPadding * 2, height - (safeTop + 220));
     this.cell = this.boardPx / (this.boardSize - 1);
     this.boardX = (width - this.boardPx) / 2;
-    this.boardY = 80;
+    this.boardY = safeTop + 104;
   }
 
   reset() {
@@ -112,11 +115,11 @@ class GobangScene {
     ctx.fillStyle = COLORS.text;
     ctx.font = 'bold 24px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('五子棋', width / 2, 40);
+    ctx.fillText('五子棋', width / 2, safeTop + 42);
 
     ctx.fillStyle = COLORS.subText;
     ctx.font = '18px sans-serif';
-    ctx.fillText(this.message, width / 2, 66);
+    ctx.fillText(this.message, width / 2, safeTop + 72);
 
     this.backButton.draw(ctx);
 
@@ -309,7 +312,7 @@ class TetrisScene {
     this.boardW = this.cell * this.cols;
     this.boardH = this.cell * this.rows;
     this.boardX = 24;
-    this.boardY = 76;
+    this.boardY = safeTop + 96;
 
     this.shapes = [
       { color: '#60a5fa', blocks: [[1, 1, 1, 1]] },
@@ -370,7 +373,7 @@ class TetrisScene {
     ctx.fillStyle = COLORS.text;
     ctx.font = 'bold 24px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('俄罗斯方块', width / 2, 40);
+    ctx.fillText('俄罗斯方块', width / 2, safeTop + 42);
 
     this.backButton.draw(ctx);
 
@@ -554,7 +557,7 @@ function drawCard(ctx, x, y, w, h) {
 }
 
 function createBackButton(onTap) {
-  return new Button(16, 20, 88, 36, '← 返回', onTap, '#4b5563');
+  return new Button(16, safeTop + TOP_GAP, 88, 36, '← 返回', onTap, '#4b5563');
 }
 
 function line(ctx, x1, y1, x2, y2) {
@@ -579,6 +582,7 @@ function init() {
   const sys = wx.getSystemInfoSync();
   width = sys.windowWidth;
   height = sys.windowHeight;
+  safeTop = sys.statusBarHeight || 0;
   canvas.width = width;
   canvas.height = height;
 
