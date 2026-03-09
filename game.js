@@ -309,12 +309,30 @@ class TetrisScene {
     this.rows = 20;
     this.grid = Array.from({ length: this.rows }, () => Array(this.cols).fill(0));
 
-    this.boardX = 24;
-    this.boardY = safeTop + 106;
-    this.boardW = width - this.boardX * 2;
-    this.cell = Math.floor(this.boardW / this.cols);
+    this.shellX = 18;
+    this.shellY = safeTop + 8;
+    this.shellW = width - this.shellX * 2;
+    this.shellH = height - this.shellY - 14;
+
+    this.panelPad = 18;
+    this.panelX = this.shellX + this.panelPad;
+    this.panelY = this.shellY + this.panelPad;
+    this.panelW = this.shellW - this.panelPad * 2;
+    this.panelH = this.shellH - this.panelPad * 2;
+
+    const headerH = 84;
+    const controlsH = 58;
+    const controlsGap = 18;
+    const boardTop = this.panelY + headerH;
+    const boardBottom = this.panelY + this.panelH - controlsH - controlsGap - 12;
+    const boardHAvail = boardBottom - boardTop;
+    const boardWAvail = this.panelW - 44;
+
+    this.cell = Math.max(12, Math.min(Math.floor(boardWAvail / this.cols), Math.floor(boardHAvail / this.rows)));
     this.boardW = this.cell * this.cols;
     this.boardH = this.cell * this.rows;
+    this.boardX = Math.floor((width - this.boardW) / 2);
+    this.boardY = Math.floor(boardTop + (boardHAvail - this.boardH) / 2);
 
     this.shapes = [
       { color: '#60a5fa', blocks: [[1, 1, 1, 1]] },
@@ -333,16 +351,16 @@ class TetrisScene {
     this.over = false;
     this.current = this.newPiece();
 
-    this.backButton = createBackButton(() => manager.switch('home'));
+    this.backButton = new Button(this.panelX + 16, this.panelY + 18, 108, 50, '←', () => manager.switch('home'));
 
-    const ctlY = this.boardY + this.boardH + 18;
+    const ctlY = this.panelY + this.panelH - controlsH - 8;
     const gap = 12;
-    const totalW = width - 24 * 2;
+    const totalW = this.panelW - 32;
     const w1 = Math.floor((totalW - gap * 3) * 0.18);
     const w2 = w1;
     const w3 = Math.floor((totalW - gap * 3) * 0.34);
     const w4 = totalW - w1 - w2 - w3 - gap * 3;
-    let x = 24;
+    let x = this.panelX + 16;
     this.btnLeft = new Button(x, ctlY, w1, 56, '←', () => this.move(-1, 0));
     x += w1 + gap;
     this.btnRight = new Button(x, ctlY, w2, 56, '→', () => this.move(1, 0));
@@ -385,7 +403,7 @@ class TetrisScene {
   }
 
   draw(ctx) {
-    drawBackground(ctx);
+    this.drawCabinet(ctx);
     this.drawHeader(ctx);
     this.drawBoard(ctx);
 
@@ -412,16 +430,20 @@ class TetrisScene {
   drawHeader(ctx) {
     this.drawMetalButton(ctx, this.backButton);
 
-    ctx.fillStyle = '#0f172a';
-    ctx.font = 'bold 58px sans-serif';
+    ctx.fillStyle = '#ea580c';
+    ctx.font = 'bold 56px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('俄罗斯方块', width / 2, safeTop + 52);
+    ctx.shadowColor = 'rgba(124, 45, 18, 0.35)';
+    ctx.shadowBlur = 8;
+    ctx.fillText('俄罗斯方块', width / 2, this.panelY + 44);
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
 
-    const pillW = 150;
-    const pillH = 52;
-    const pillX = width - pillW - 18;
-    const pillY = safeTop + 18;
+    const pillW = 128;
+    const pillH = 48;
+    const pillX = this.panelX + this.panelW - pillW - 14;
+    const pillY = this.panelY + 20;
 
     const g = ctx.createLinearGradient(pillX, pillY, pillX, pillY + pillH);
     g.addColorStop(0, '#4b5563');
@@ -437,16 +459,35 @@ class TetrisScene {
 
     const scoreText = String(Math.min(999, this.score)).padStart(3, '0');
     const levelText = String(this.level).padStart(2, '0');
-    ctx.font = 'bold 44px monospace';
+    ctx.font = 'bold 36px monospace';
     ctx.textAlign = 'left';
     ctx.fillStyle = '#facc15';
-    ctx.fillText(scoreText, pillX + 18, pillY + pillH / 2 + 1);
+    ctx.fillText(scoreText, pillX + 14, pillY + pillH / 2 + 1);
     ctx.fillStyle = '#e5e7eb';
-    ctx.fillText(levelText, pillX + 86, pillY + pillH / 2 + 1);
+    ctx.fillText(levelText, pillX + 74, pillY + pillH / 2 + 1);
+  }
+
+  drawCabinet(ctx) {
+    const bg = ctx.createLinearGradient(0, 0, 0, height);
+    bg.addColorStop(0, '#262a31');
+    bg.addColorStop(1, '#1b1f27');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, width, height);
+
+    const shell = ctx.createLinearGradient(this.shellX, this.shellY, this.shellX, this.shellY + this.shellH);
+    shell.addColorStop(0, '#d6deea');
+    shell.addColorStop(1, '#adb8c9');
+    ctx.fillStyle = shell;
+    roundRect(ctx, this.shellX, this.shellY, this.shellW, this.shellH, 44);
+    ctx.fill();
+
+    ctx.fillStyle = '#f8fafc';
+    roundRect(ctx, this.panelX, this.panelY, this.panelW, this.panelH, 34);
+    ctx.fill();
   }
 
   drawBoard(ctx) {
-    roundRect(ctx, this.boardX, this.boardY, this.boardW, this.boardH, 26);
+    roundRect(ctx, this.boardX, this.boardY, this.boardW, this.boardH, 16);
     ctx.save();
     ctx.clip();
 
@@ -491,14 +532,14 @@ class TetrisScene {
 
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
     ctx.lineWidth = 2;
-    roundRect(ctx, this.boardX, this.boardY, this.boardW, this.boardH, 26);
+    roundRect(ctx, this.boardX, this.boardY, this.boardW, this.boardH, 16);
     ctx.stroke();
   }
 
   drawMetalButton(ctx, btn) {
     const g = ctx.createLinearGradient(btn.x, btn.y, btn.x, btn.y + btn.h);
-    g.addColorStop(0, '#64748b');
-    g.addColorStop(1, '#334155');
+    g.addColorStop(0, '#e2e8f0');
+    g.addColorStop(1, '#94a3b8');
     ctx.fillStyle = g;
     ctx.shadowColor = 'rgba(15, 23, 42, 0.35)';
     ctx.shadowBlur = 12;
@@ -508,15 +549,15 @@ class TetrisScene {
     ctx.shadowColor = 'transparent';
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = '#334155';
     ctx.lineWidth = 2;
     roundRect(ctx, btn.x + 1, btn.y + 1, btn.w - 2, btn.h - 2, 15);
     ctx.stroke();
-    ctx.fillStyle = '#e5e7eb';
-    ctx.font = 'bold 28px sans-serif';
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 34px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('返回', btn.x + btn.w / 2, btn.y + btn.h / 2 + 1);
+    ctx.fillText(btn.text, btn.x + btn.w / 2, btn.y + btn.h / 2 + 1);
   }
 
   drawBlueButton(ctx, btn) {
